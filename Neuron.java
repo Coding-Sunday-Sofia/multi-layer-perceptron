@@ -2,9 +2,8 @@
 public class Neuron {
 
 	// main constructor
-	public Neuron(int prev_n_neurons, java.util.Random rand)
-	{
-		// each neuron know the weights of each connection 
+	public Neuron(int prev_n_neurons, java.util.Random rand) {
+		// each neuron know the weights of each connection
 		// with neurons of the previous layer
 		_synapticWeights = new float[prev_n_neurons];
 
@@ -14,8 +13,7 @@ public class Neuron {
 	}
 
 	// activate the neuron with given inputs, return the output
-	public float activate(float inputs[])
-	{
+	public float activate(float inputs[]) {
 		_activation = 0.0f;
 		assert(inputs.length == _synapticWeights.length);
 
@@ -26,15 +24,20 @@ public class Neuron {
 		return 2.0f / (1.0f + (float) Math.exp((-_activation) * lambda)) - 1.0f;
 	}
 
-	public float getActivationDerivative() // dphi(_activation)
-	{
+	public float getActivationDerivative() { // dphi(_activation)
 		float expmlx = (float) Math.exp(lambda * _activation);
 		return 2 * lambda * expmlx / ((1 + expmlx) * (1 + expmlx));
 	}
 
-	public float[] getSynapticWeights() { return _synapticWeights; }
-	public float getSynapticWeight(int i) { return _synapticWeights[i]; }
-	public void setSynapticWeight(int i, float v) { _synapticWeights[i] = v; }
+	public float[] getSynapticWeights() {
+		return _synapticWeights;
+	}
+	public float getSynapticWeight(int i) {
+		return _synapticWeights[i];
+	}
+	public void setSynapticWeight(int i, float v) {
+		_synapticWeights[i] = v;
+	}
 
 	// --------
 	private float _activation;

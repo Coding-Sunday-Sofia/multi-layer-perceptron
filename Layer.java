@@ -4,8 +4,7 @@ import java.util.ArrayList;
 public class Layer {
 
 	// main constructor
-	public Layer(int prev_n_neurons, int n_neurons, java.util.Random rand)
-	{
+	public Layer(int prev_n_neurons, int n_neurons, java.util.Random rand) {
 		// all the layers/neurons must use the same random number generator
 		_n_neurons = n_neurons + 1;
 		_prev_n_neurons = prev_n_neurons + 1;
@@ -19,8 +18,7 @@ public class Layer {
 	}
 
 	// add 1 in front of the out vector
-	public static float[] add_bias(float[] in)
-	{
+	public static float[] add_bias(float[] in) {
 		float out[] = new float[in.length + 1];
 		for (int i = 0; i < in.length; ++i)
 			out[i + 1] = in[i];
@@ -29,8 +27,7 @@ public class Layer {
 	}
 
 	// compute the output of the layer
-	public float[] evaluate(float in[])
-	{
+	public float[] evaluate(float in[]) {
 		float inputs[];
 
 		// add an input (bias) if necessary
@@ -51,12 +48,24 @@ public class Layer {
 		return _outputs;
 	}
 
-	public int size() { return _n_neurons; }
-	public float getOutput(int i) { return _outputs[i]; }
-	public float getActivationDerivative(int i) { return _neurons.get(i).getActivationDerivative(); }
-	public float[] getWeights(int i) { return _neurons.get(i).getSynapticWeights(); }
-	public float getWeight(int i, int j) { return _neurons.get(i).getSynapticWeight(j); }
-	public void setWeight(int i, int j, float v) { _neurons.get(i).setSynapticWeight(j, v); }
+	public int size() {
+		return _n_neurons;
+	}
+	public float getOutput(int i) {
+		return _outputs[i];
+	}
+	public float getActivationDerivative(int i) {
+		return _neurons.get(i).getActivationDerivative();
+	}
+	public float[] getWeights(int i) {
+		return _neurons.get(i).getSynapticWeights();
+	}
+	public float getWeight(int i, int j) {
+		return _neurons.get(i).getSynapticWeight(j);
+	}
+	public void setWeight(int i, int j, float v) {
+		_neurons.get(i).setSynapticWeight(j, v);
+	}
 
 	// --------
 	private int _n_neurons, _prev_n_neurons;
