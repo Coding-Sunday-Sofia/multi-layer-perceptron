@@ -120,10 +120,10 @@ public class Mlp {
 	private void updateWeights(float learning_rate) {
 		for (int c = 0; c < _layers.size(); ++c) {
 			for (int i = 0; i < _layers.get(c).size(); ++i) {
-				if(c == 1 && blocked == i) {
+				if (c == 1 && blocked == i) {
 					continue;
 				}
-				
+
 				float weights[] = _layers.get(c).getWeights(i);
 				for (int j = 0; j < weights.length; ++j) {
 					_layers.get(c).setWeight(i, j,
@@ -195,27 +195,55 @@ public class Mlp {
 		 */
 		int nn_neurons[] = { 2, 10, 1, };
 
-		Mlp mlp = new Mlp(nn_neurons);
+		final int NUMBER_OF_EXPERIMENTS = 30;
+		final int NUMBER_OF_TRAINING_CYCLES = 1000;
+		float values[][] = new float[NUMBER_OF_EXPERIMENTS][NUMBER_OF_TRAINING_CYCLES];
+		
+		for (int c = 0; c < NUMBER_OF_EXPERIMENTS; c++) {
+			Mlp mlp = new Mlp(nn_neurons);
 
-		// PrintWriter fout = new PrintWriter(new FileWriter("plot.dat"));
-		// fout.println("#\tX\tY");
+			for (int r = 0; r < NUMBER_OF_TRAINING_CYCLES; r++) {
+				/* Single training step. */
+				mlp.learn(ex, out, 0.3f);
 
-		for (int i = 0; i < 10000; ++i) {
-			/* Select index of a neuron to block in the hidden layer. */
-			blocked = rand.nextInt(nn_neurons[1]);
-
-			/* Single training step. */
-			mlp.learn(ex, out, 0.3f);
-
-			/* Single evaluation step. */
-			float error = mlp.evaluateQuadraticError(ex, out);
-
-			/* Console output. */
-			System.out.println(i + " -> error : " + error);
-
-			// fout.println("\t" + i + "\t" + error);
+				/* Single evaluation step. */
+				values[c][r] = mlp.evaluateQuadraticError(ex, out);
+			}
 		}
 
-		// fout.close();
+		/* Console output. */
+		for (int r = 0; r < NUMBER_OF_TRAINING_CYCLES; r++) {
+			for (int c = 0; c < NUMBER_OF_EXPERIMENTS; c++) {
+				System.out.print(values[c][r]);
+				System.out.print("\t");
+			}
+			System.out.println();
+		}
+
+		System.out.println();
+		
+		for (int c = 0; c < NUMBER_OF_EXPERIMENTS; c++) {
+			Mlp mlp = new Mlp(nn_neurons);
+
+			for (int r = 0; r < NUMBER_OF_TRAINING_CYCLES; r++) {
+				/* Select index of a neuron to block in the hidden layer. */
+				blocked = rand.nextInt(nn_neurons[1]);
+
+				/* Single training step. */
+				mlp.learn(ex, out, 0.3f);
+
+				/* Single evaluation step. */
+				values[c][r] = mlp.evaluateQuadraticError(ex, out);
+			}
+		}
+
+		/* Console output. */
+		for (int r = 0; r < NUMBER_OF_TRAINING_CYCLES; r++) {
+			for (int c = 0; c < NUMBER_OF_EXPERIMENTS; c++) {
+				System.out.print(values[c][r]);
+				System.out.print("\t");
+			}
+			System.out.println();
+		}
 	}
 }
