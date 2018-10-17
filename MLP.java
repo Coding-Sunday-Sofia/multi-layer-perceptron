@@ -18,7 +18,10 @@ public class MLP {
 	private static final int NUMBER_OF_EXPERIMENTS = 30;
 
 	/** Number of training cycles. */
-	private static final int NUMBER_OF_TRAINING_CYCLES = 10000;
+	private static final int NUMBER_OF_TRAINING_CYCLES = 100;
+
+	/** Weigths permutation rate. */
+	private static final double WEIGHTS_PERMUTATION_RATE = 0.01D;
 
 	/** List of layers. */
 	private ArrayList<Layer> layers;
@@ -48,20 +51,30 @@ public class MLP {
 		return outputs;
 	}
 
-	private float evaluateError(float network_output[], float desired_output[]) {
+	/**
+	 * Evaluate network error for particular desired output.
+	 * 
+	 * @param networkOutput
+	 *            Network output.
+	 * @param desiredOutput
+	 *            Desired output.
+	 * 
+	 * @return Network error.
+	 */
+	private float evaluateError(float networkOutput[], float desiredOutput[]) {
 		/* Add bias to input if necessary. */
 		float desired[];
-		if (desired_output.length != network_output.length) {
-			desired = Layer.add_bias(desired_output);
+		if (desiredOutput.length != networkOutput.length) {
+			desired = Layer.add_bias(desiredOutput);
 		} else {
-			desired = desired_output;
+			desired = desiredOutput;
 		}
 
-		assert (network_output.length == desired.length);
+		assert (networkOutput.length == desired.length);
 
 		float error = 0;
-		for (int i = 0; i < network_output.length; ++i) {
-			error += (network_output[i] - desired[i]) * (network_output[i] - desired[i]);
+		for (int i = 0; i < networkOutput.length; ++i) {
+			error += (networkOutput[i] - desired[i]) * (networkOutput[i] - desired[i]);
 		}
 
 		return error;
@@ -169,10 +182,10 @@ public class MLP {
 		resetWeightsDelta();
 
 		/* Examples should be shuffled in order not ANN not to learn order pattern. */
-	    long seed = PRNG.nextInt(Integer.MAX_VALUE);
-	    Collections.shuffle(input, new Random(seed));
-	    Collections.shuffle(output, new Random(seed));
-	    
+		long seed = PRNG.nextInt(Integer.MAX_VALUE);
+		Collections.shuffle(input, new Random(seed));
+		Collections.shuffle(output, new Random(seed));
+
 		/* Do a single training step. */
 		for (int l = 0; l < input.size(); ++l) {
 			evaluate(input.get(l));
@@ -201,6 +214,28 @@ public class MLP {
 			batchBackPropagation(examples, results, learningRate);
 			error = evaluateQuadraticError(examples, results);
 		} while (error > 0.0001f);
+	}
+
+	/** Permutate two randomly selected weights. */
+	private void permutateRandomWeights() {
+		/* Select random layer except the first one. */
+		int c = 1 + PRNG.nextInt(layers.size() - 1);
+
+		/* Select two random different neurons from the previous layer. */
+		int a, b;
+		do {
+			a = PRNG.nextInt(layers.get(c).size());
+			b = PRNG.nextInt(layers.get(c).size());
+		} while (a == b);
+
+		float weights1[] = layers.get(c).getWeights(a);
+		float weights2[] = layers.get(c).getWeights(b);
+
+		/* Swap randomly selected weights. */
+		int r = PRNG.nextInt(Math.min(weights1.length, weights2.length));
+		float buffer = weights1[r];
+		weights1[r] = weights2[r];
+		weights2[r] = buffer;
 	}
 
 	/**
@@ -279,6 +314,36 @@ public class MLP {
 		}
 	}
 
+	private static void weightsPermutationTraining(int[] topology, ArrayList<float[]> input,
+			ArrayList<float[]> output) {
+		float values[][] = new float[NUMBER_OF_EXPERIMENTS][NUMBER_OF_TRAINING_CYCLES];
+
+		for (int c = 0; c < NUMBER_OF_EXPERIMENTS; c++) {
+			MLP mlp = new MLP(topology);
+
+			for (int r = 0; r < NUMBER_OF_TRAINING_CYCLES; r++) {
+				/* Single training step. */
+				mlp.learn(input, output, 0.3f);
+
+				if (Math.random() < WEIGHTS_PERMUTATION_RATE) {
+					mlp.permutateRandomWeights();
+				}
+
+				/* Single evaluation step. */
+				values[c][r] = mlp.evaluateQuadraticError(input, output);
+			}
+		}
+
+		/* Console output. */
+		for (int r = 0; r < NUMBER_OF_TRAINING_CYCLES; r++) {
+			for (int c = 0; c < NUMBER_OF_EXPERIMENTS; c++) {
+				System.out.print(values[c][r]);
+				System.out.print("\t");
+			}
+			System.out.println();
+		}
+	}
+
 	/**
 	 * Application single entry point.
 	 * 
@@ -320,9 +385,11 @@ public class MLP {
 		input.get(3)[1] = -1;
 		output.get(3)[0] = -1;
 
-		//regularTraining(topology, input, output);
+		regularTraining(topology, input, output);
 		System.out.println();
-		blockedNeuronTraining(topology, input, output);
+		// blockedNeuronTraining(topology, input, output);
+		// System.out.println();
+		weightsPermutationTraining(topology, input, output);
 		System.out.println();
 	}
 }
