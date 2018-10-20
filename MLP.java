@@ -1,3 +1,8 @@
+
+/*
+ * Execute command: java MLP >~/Desktop/out01.csv
+ */
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,10 +14,13 @@ import java.util.Random;
 public class MLP {
 
 	/** The index of the hidden layer blocked neuron in each training cycle. */
-	private static int blocked = -1;
+	private static int blockedNuronIndex = -1;
 
 	/** Pseudo-random number generator instance. */
 	private static final Random PRNG = new Random();
+
+	/** Desired network error level. */
+	private static float DESIRED_ERROR_LEVEL = 0.01f;
 
 	/** Number of independent experiments. */
 	private static final int NUMBER_OF_EXPERIMENTS = 30;
@@ -167,7 +175,7 @@ public class MLP {
 	private void updateWeights(float learningRate) {
 		for (int c = 0; c < layers.size(); ++c) {
 			for (int i = 0; i < layers.get(c).size(); ++i) {
-				if (c == 1 && blocked == i) {
+				if (c == 1 && blockedNuronIndex == i) {
 					continue;
 				}
 
@@ -225,7 +233,10 @@ public class MLP {
 		do {
 			batchBackPropagation(examples, results, learningRate);
 			error = evaluateQuadraticError(examples, results);
-		} while (error > 0.0001f);
+
+			/* Recover to previous configuration. */
+			swapBackWeights();
+		} while (error > DESIRED_ERROR_LEVEL);
 	}
 
 	/** Permutate two randomly selected weights. */
@@ -243,7 +254,16 @@ public class MLP {
 		float weights2[] = layers.get(swapLayerIndex).getWeights(swapNuronIndex2);
 
 		/* Swap randomly selected weights. */
-		swapWeightIndex = PRNG.nextInt(Math.min(weights1.length, weights2.length));
+		swapWeightIndex = 0;
+		float difference = Math.abs(weights1[0] - weights2[0]);
+		int length = Math.min(weights1.length, weights2.length);
+		for (int i = 1; i < length; i++) {
+			if (Math.abs(weights1[i] - weights2[i]) < difference) {
+				swapWeightIndex = i;
+				difference = Math.abs(weights1[i] - weights2[i]);
+			}
+		}
+
 		float buffer = weights1[swapWeightIndex];
 		weights1[swapWeightIndex] = weights2[swapWeightIndex];
 		weights2[swapWeightIndex] = buffer;
@@ -305,6 +325,7 @@ public class MLP {
 		float values[][] = new float[NUMBER_OF_EXPERIMENTS][NUMBER_OF_TRAINING_CYCLES];
 
 		for (int c = 0; c < NUMBER_OF_EXPERIMENTS; c++) {
+			System.err.print("*");
 			MLP mlp = new MLP(topology);
 
 			for (int r = 0; r < NUMBER_OF_TRAINING_CYCLES; r++) {
@@ -330,11 +351,12 @@ public class MLP {
 		float values[][] = new float[NUMBER_OF_EXPERIMENTS][NUMBER_OF_TRAINING_CYCLES];
 
 		for (int c = 0; c < NUMBER_OF_EXPERIMENTS; c++) {
+			System.err.print("*");
 			MLP mlp = new MLP(topology);
 
 			for (int r = 0; r < NUMBER_OF_TRAINING_CYCLES; r++) {
 				/* Select index of a neuron to block in the hidden layer. */
-				blocked = PRNG.nextInt(topology[1]);
+				blockedNuronIndex = PRNG.nextInt(topology[1]);
 
 				/* Single training step. */
 				mlp.learn(input, output, 0.3f);
@@ -359,17 +381,17 @@ public class MLP {
 		float values[][] = new float[NUMBER_OF_EXPERIMENTS][NUMBER_OF_TRAINING_CYCLES];
 
 		for (int c = 0; c < NUMBER_OF_EXPERIMENTS; c++) {
+			System.err.print("*");
 			MLP mlp = new MLP(topology);
 
 			for (int r = 0; r < NUMBER_OF_TRAINING_CYCLES; r++) {
-				/* Single training step. */
-				mlp.learn(input, output, 0.3f);
-
+				/* Permutate weights. */
 				if (Math.random() < WEIGHTS_PERMUTATION_RATE) {
 					mlp.permutateRandomWeights();
-				} else {
-					mlp.swapBackWeights();
 				}
+
+				/* Single training step. */
+				mlp.learn(input, output, 0.3f);
 
 				/* Single evaluation step. */
 				values[c][r] = mlp.evaluateQuadraticError(input, output);
@@ -394,13 +416,13 @@ public class MLP {
 	 */
 	public static void main(String[] args) throws IOException {
 		/*
-		 * layer 1: input layer - 2 neurons
+		 * layer 1: input layer neurons
 		 * 
-		 * layer 2: hidden layer - 10 neurons
+		 * layer 2: hidden layer neurons
 		 * 
-		 * layer 3: output layer - 1 neuron
+		 * layer 3: output layer neurons
 		 */
-		int topology[] = { 2, 10, 1, };
+		int topology[] = { 2, 30, 1, };
 
 		/* Input-out put pairs. */
 		ArrayList<float[]> input = new ArrayList<float[]>();
