@@ -18,7 +18,7 @@ public class MLP {
 	private static final int NUMBER_OF_EXPERIMENTS = 30;
 
 	/** Number of training cycles. */
-	private static final int NUMBER_OF_TRAINING_CYCLES = 100;
+	private static final int NUMBER_OF_TRAINING_CYCLES = 1000;
 
 	/** Weigths permutation rate. */
 	private static final double WEIGHTS_PERMUTATION_RATE = 0.01D;
@@ -31,6 +31,18 @@ public class MLP {
 
 	/** Gradients. */
 	private ArrayList<float[]> gradients;
+
+	/** Index of the layer which will be used for weights swap. */
+	private int swapLayerIndex = -1;
+
+	/** Index of the first neuron which will be used for weights swap. */
+	private int swapNuronIndex1 = -1;
+
+	/** Index of the second neuron which will be used for weights swap. */
+	private int swapNuronIndex2 = -1;
+
+	/** Index of the weight which will be swapped. */
+	private int swapWeightIndex = -1;
 
 	/**
 	 * Propagate the inputs through all neural network and return the outputs.
@@ -219,23 +231,51 @@ public class MLP {
 	/** Permutate two randomly selected weights. */
 	private void permutateRandomWeights() {
 		/* Select random layer except the first one. */
-		int c = 1 + PRNG.nextInt(layers.size() - 1);
+		swapLayerIndex = 1 + PRNG.nextInt(layers.size() - 1);
 
 		/* Select two random different neurons from the previous layer. */
-		int a, b;
 		do {
-			a = PRNG.nextInt(layers.get(c).size());
-			b = PRNG.nextInt(layers.get(c).size());
-		} while (a == b);
+			swapNuronIndex1 = PRNG.nextInt(layers.get(swapLayerIndex).size());
+			swapNuronIndex2 = PRNG.nextInt(layers.get(swapLayerIndex).size());
+		} while (swapNuronIndex1 == swapNuronIndex2);
 
-		float weights1[] = layers.get(c).getWeights(a);
-		float weights2[] = layers.get(c).getWeights(b);
+		float weights1[] = layers.get(swapLayerIndex).getWeights(swapNuronIndex1);
+		float weights2[] = layers.get(swapLayerIndex).getWeights(swapNuronIndex2);
 
 		/* Swap randomly selected weights. */
-		int r = PRNG.nextInt(Math.min(weights1.length, weights2.length));
-		float buffer = weights1[r];
-		weights1[r] = weights2[r];
-		weights2[r] = buffer;
+		swapWeightIndex = PRNG.nextInt(Math.min(weights1.length, weights2.length));
+		float buffer = weights1[swapWeightIndex];
+		weights1[swapWeightIndex] = weights2[swapWeightIndex];
+		weights2[swapWeightIndex] = buffer;
+	}
+
+	/**
+	 * Swap weights back after random swap.
+	 */
+	private void swapBackWeights() {
+		if (swapLayerIndex == -1) {
+			return;
+		}
+		if (swapNuronIndex1 == -1) {
+			return;
+		}
+		if (swapNuronIndex2 == -1) {
+			return;
+		}
+		if (swapWeightIndex == -1) {
+			return;
+		}
+
+		float weights1[] = layers.get(swapLayerIndex).getWeights(swapNuronIndex1);
+		float weights2[] = layers.get(swapLayerIndex).getWeights(swapNuronIndex2);
+		float buffer = weights1[swapWeightIndex];
+		weights1[swapWeightIndex] = weights2[swapWeightIndex];
+		weights2[swapWeightIndex] = buffer;
+
+		swapLayerIndex = -1;
+		swapNuronIndex1 = -1;
+		swapNuronIndex2 = -1;
+		swapWeightIndex = -1;
 	}
 
 	/**
@@ -327,6 +367,8 @@ public class MLP {
 
 				if (Math.random() < WEIGHTS_PERMUTATION_RATE) {
 					mlp.permutateRandomWeights();
+				} else {
+					mlp.swapBackWeights();
 				}
 
 				/* Single evaluation step. */
